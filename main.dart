@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
   int? lastHumidity;
   int? lastTemperatureId;
 
-  static const String BASE_URL = "https://smartbox-five.vercel.app/";
+  static const String BASE_URL = "https://groupeproject.vercel.app/";
   static const int BOX_ID = 1;
 
   @override
