@@ -83,7 +83,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   } else if (state is SearchLoaded) {
                     final results =
                         state.filteredBoxes.expand((box) {
-                          final boxName = box['box_name'] as String;
+                          final boxName = box['box_name']?.toString() ?? 'Unknown Box';
                           return (box['items'] as List).map(
                             (j) => {
                               'item': Item.fromJson(j),
@@ -131,16 +131,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
                                     child:
-                                        it.imagePath != null
-                                            ? Image.network(
-                                              it.imagePath!,
+                                      it.decodedImage != null
+                                          ? Image.memory(
+                                              it.decodedImage!,
                                               fit: BoxFit.contain,
                                             )
-                                            : Icon(
+                                          : const Icon(
                                               Icons.image_not_supported,
                                               size: 60,
                                               color: Colors.grey,
                                             ),
+
                                   ),
                                 ),
                                 onTap: () {
@@ -211,7 +212,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      box['box_name'],
+                                      box['box_name'] ?? 'Unknown Box',
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -228,10 +229,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                                       (_) => ItemsCubit(
                                                         ItemService(),
                                                       )..getItems(
-                                                        box['box_id'],
+                                                        box['box_id'] ?? -1,
                                                       ),
                                                   child: Items(
-                                                    boxId: box['box_id'],
+                                                    boxId: box['box_id'] ?? -1,
                                                     userId: int.parse(
                                                       widget.userId,
                                                     ),
@@ -265,9 +266,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                         ),
                                         child: Column(
                                           children: [
-                                            if (it.imagePath != null)
-                                              Image.network(
-                                                it.imagePath!,
+                                            if (it.decodedImage != null)
+                                              Image.memory(
+                                                it.decodedImage!,
                                                 width: 60,
                                                 height: 60,
                                                 fit: BoxFit.cover,

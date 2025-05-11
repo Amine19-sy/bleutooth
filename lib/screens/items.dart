@@ -76,18 +76,14 @@ class _ItemsState extends State<Items> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child:
-                                  item.imagePath != null
-                                      ? Image.network(
-                                        item.imagePath!,
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                      )
-                                      : Icon(
-                                        Icons.image_not_supported,
-                                        size: 60,
-                                        color: Colors.grey,
-                                      ),
+                                  item.decodedImage != null
+                                  ? Image.memory(
+                                      item.decodedImage!,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -226,7 +222,7 @@ class _ItemsState extends State<Items> {
             final result = await Navigator.push<bool>(
               context,
               MaterialPageRoute(
-                builder: (_) => AddItemScreen(boxId: widget.boxId, userId: '1'),
+                builder: (_) => AddItemScreen(boxId: widget.boxId, userId: widget.userId.toString()),
               ),
             );
 

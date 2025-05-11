@@ -1,41 +1,40 @@
-import 'package:bleutooth/services/BaseUrl.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 class Item {
   final int id;
-  final String boxId;
+  final int boxId;
   final String name;
-  final String? imagePath;
+  final int userId;
   final DateTime addedAt;
+  final String? imageData; // base64
 
   Item({
     required this.id,
     required this.boxId,
     required this.name,
-    this.imagePath,
+    required this.userId,
     required this.addedAt,
+    this.imageData,
   });
 
   factory Item.fromJson(Map<String, dynamic> json) {
-  final String? rawPath = json['image_path'];
-  final String? imageUrl = rawPath != null
-      ? '${ChromeUrl}$rawPath' 
-      : null;
+    return Item(
+      id: json['id'],
+      boxId: json['box_id'],
+      name: json['name'],
+      userId: json['user_id'],
+      addedAt: DateTime.parse(json['added_at']),
+      imageData: json['image_data'],
+    );
+  }
 
-  return Item(
-    id: json['id'],
-    boxId: json['box_id'].toString(),
-    name: json['name'],
-    imagePath: imageUrl,
-    addedAt: DateTime.parse(json['added_at']),
-  );
-}
-
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'box_id': boxId,
-        'name': name,
-        'image_path': imagePath,
-        'added_at': addedAt.toIso8601String(),
-      };
+  Uint8List? get decodedImage {
+    if (imageData == null) return null;
+    try {
+      return base64Decode(imageData!);
+    } catch (_) {
+      return null;
+    }
+  }
 }

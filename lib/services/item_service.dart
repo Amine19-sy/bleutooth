@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:bleutooth/models/item.dart';
 import 'package:bleutooth/services/BaseUrl.dart';
 
-
 class ItemService {
   final String baseUrl = '${ChromeUrl}/api';
 
@@ -19,58 +18,33 @@ class ItemService {
     }
   }
 
-  // Future<Item> addItem({
-  //   required int boxId,
-  //   required String name,
-  //   // String? image,         
-  //   required int userId,
-  // }) async {
-  //   final response = await http.post(
-  //     Uri.parse('$baseUrl/add_item'),
-  //     headers: {'Content-Type': 'application/json'},
-  //     body: jsonEncode({
-  //       'box_id': boxId,
-  //       'name': name,
-  //       // if (image != null) 'image': image,
-  //       'user_id': userId,
-  //     }),
-  //   );
-
-  //   if (response.statusCode == 201) {
-  //     final Map<String, dynamic> decoded = json.decode(response.body);
-  //     return Item.fromJson(decoded);
-  //   } else {
-  //     throw Exception('Failed to add item');
-  //   }
-  // }
-
   Future<Item> addItem({
-  required int boxId,
-  required String name,
-  required int userId,
-  File? imageFile,
-}) async {
-  var request = http.MultipartRequest(
-    'POST',
-    Uri.parse('$baseUrl/add_item'),
-  );
-  request.fields['box_id'] = boxId.toString();
-  request.fields['name'] = name;
-  request.fields['user_id'] = userId.toString();
+    required int boxId,
+    required String name,
+    required int userId,
+    File? imageFile,
+  }) async {
+    final uri = Uri.parse('$baseUrl/add_item');
+    final request = http.MultipartRequest('POST', uri);
 
-  if (imageFile != null) {
-    request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
-  }
+    request.fields['box_id'] = boxId.toString();
+    request.fields['name'] = name;
+    request.fields['user_id'] = userId.toString();
 
-  var response = await request.send();
-  if (response.statusCode == 201) {
-    var responseData = await response.stream.bytesToString();
-    final Map<String, dynamic> decoded = json.decode(responseData);
-    return Item.fromJson(decoded);
-  } else {
-    throw Exception('Failed to add item');
+    if (imageFile != null && await imageFile.exists()) {
+      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
+    }
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode == 201) {
+      final decoded = json.decode(response.body);
+      return Item.fromJson(decoded);
+    } else {
+      throw Exception('Failed to add item: ${response.body}');
+    }
   }
-}
 
   Future<void> removeItem({
     required int itemId,
@@ -103,6 +77,4 @@ class ItemService {
     final List<dynamic> data = json.decode(resp.body);
     return data.map((e) => Item.fromJson(e as Map<String, dynamic>)).toList();
   }
-
-  
 }

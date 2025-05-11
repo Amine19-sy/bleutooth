@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:bleutooth/models/box.dart';
 import 'package:bleutooth/bloc/cubits/collab_cubit.dart';
 import 'package:bleutooth/bloc/states/collab_states.dart';
+import 'package:bleutooth/services/box_control.dart';
 
 class BoxHeader extends StatefulWidget {
   final Box box;
@@ -21,6 +20,8 @@ class BoxHeader extends StatefulWidget {
 }
 
 class _BoxHeaderState extends State<BoxHeader> {
+  final BoxControlService boxService = BoxControlService();
+
   BluetoothDevice? connectedDevice;
   BluetoothConnection? connection;
 
@@ -39,7 +40,6 @@ class _BoxHeaderState extends State<BoxHeader> {
   int? lastHumidity;
   int? lastTemperatureId;
 
-  static const String BASE_URL = "https://groupeproject.vercel.app/";
   static const int BOX_ID = 1;
 
   @override
@@ -87,49 +87,25 @@ class _BoxHeaderState extends State<BoxHeader> {
   }
 
   Future<void> fetchLastTemperature({bool retryOnSameId = false}) async {
-    try {
-      final url = Uri.parse("${BASE_URL}api/last_temperature?box_id=$BOX_ID");
-      final response = await http.get(url);
+    final data = await boxService.fetchLastTemperature(BOX_ID);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final int newId = data["id"];
+    if (data == null) return;
 
-        if (!retryOnSameId || newId != lastTemperatureId) {
-          setState(() {
-            lastTemp = (data["temperature"] as num).toDouble();
-            lastHumidity = data["humidity"];
-            lastTemperatureId = newId;
-          });
-        } else {
-          await Future.delayed(Duration(seconds: 1));
-          fetchLastTemperature(retryOnSameId: true);
-        }
-      }
-    } catch (e) {
-      print("❌ Error fetching temperature: $e");
+    final int newId = data["id"];
+    if (!retryOnSameId || newId != lastTemperatureId) {
+      setState(() {
+        lastTemp = (data["temperature"] as num).toDouble();
+        lastHumidity = data["humidity"];
+        lastTemperatureId = newId;
+      });
+    } else {
+      await Future.delayed(const Duration(seconds: 1));
+      fetchLastTemperature(retryOnSameId: true);
     }
   }
 
   Future<void> sendCommand(String command) async {
-    try {
-      final url = Uri.parse("${BASE_URL}api/send_command");
-      final payload = {"command": command, "box_id": BOX_ID};
-
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(payload),
-      );
-
-      if (response.statusCode == 201) {
-        setState(() => status = "✅ Command '$command' sent");
-      } else {
-        setState(() => status = "❌ Failed: ${response.statusCode}");
-      }
-    } catch (e) {
-      setState(() => status = "❌ Error: $e");
-    }
+    boxService.sendCommand(command, BOX_ID);
   }
 
   Future<void> sendCredentials() async {
@@ -156,6 +132,7 @@ class _BoxHeaderState extends State<BoxHeader> {
         setState(() => status = '🔌 Disconnected.');
       });
     } catch (e) {
+      setState(() => status = '❌ Bluetooth Error');
     }
   }
 
@@ -167,14 +144,12 @@ class _BoxHeaderState extends State<BoxHeader> {
     Function? afterOn,
   }) {
     if (currentState) {
-      sendCommand(offCommand);
       updateState(false);
     } else {
       sendCommand(onCommand);
       updateState(true);
       if (afterOn != null) afterOn();
       Future.delayed(Duration(seconds: 5), () {
-        sendCommand(offCommand);
         if (mounted) updateState(false);
       });
     }
@@ -188,8 +163,9 @@ class _BoxHeaderState extends State<BoxHeader> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
+    return SingleChildScrollView(
+      child: Column(
+        children: [
         // Header and Collaborators
         ...[
           Stack(
@@ -339,6 +315,6 @@ class _BoxHeaderState extends State<BoxHeader> {
           child: Text(status, style: const TextStyle(fontSize: 16)),
         ),
       ],
-    );
+    ));
   }
 }

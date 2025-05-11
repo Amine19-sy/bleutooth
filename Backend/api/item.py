@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify
 from supabase import create_client
 import os
+import base64
 from dotenv import load_dotenv
-from werkzeug.utils import secure_filename
 
 load_dotenv()
 item_bp = Blueprint('item', __name__)
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
-# ✅ Add Item
+# ✅ Add Item (base64-encoded image_data)
 @item_bp.route('/api/add_item', methods=['POST'])
 def add_item():
     box_id = request.form.get('box_id')
@@ -16,22 +16,26 @@ def add_item():
     user_id = request.form.get('user_id')
     image = request.files.get('image')
 
-    image_path = None
+    encoded_image = None
     if image:
-        filename = secure_filename(image.filename)
-        local_path = f'/tmp/{filename}'
-        image.save(local_path)
-
-        with open(local_path, 'rb') as f:
-            supabase.storage.from_('items').upload(f'items/{filename}', f)
-            image_path = f'items/{filename}'
+        try:
+            image_bytes = image.read()
+            encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+        except Exception as e:
+            return jsonify({'error': f'Error encoding image: {str(e)}'}), 500
 
     try:
+        # ✅ Check if user exists
+        user_check = supabase.table("User").select("id").eq("id", int(user_id)).execute()
+        if not user_check.data:
+            return jsonify({'error': f"User ID {user_id} not found."}), 400
+
+        # ✅ Insert item
         result = supabase.table('Item').insert({
             'box_id': int(box_id),
             'name': name,
             'user_id': int(user_id),
-            'image_path': image_path
+            'image_data': encoded_image  # base64 string or None
         }).execute()
 
         if result.data:
@@ -40,6 +44,7 @@ def add_item():
             return jsonify({'error': 'Insert failed'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # ✅ Get Items by box
 @item_bp.route('/api/items', methods=['GET'])
@@ -54,25 +59,18 @@ def get_items():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # ✅ Delete Item
 @item_bp.route('/api/remove_item/<int:item_id>', methods=['DELETE'])
 def remove_item(item_id):
     user_id = request.args.get('user_id')
 
     try:
-        # get image path before deleting
-        fetch = supabase.table("Item").select("image_path").eq("id", item_id).eq("user_id", user_id).single().execute()
-        image_path = fetch.data.get("image_path")
-
         result = supabase.table("Item").delete().eq("id", item_id).eq("user_id", user_id).execute()
-
-        # Delete image from storage if available
-        if image_path:
-            supabase.storage.from_("items").remove([image_path])
-
         return jsonify({"message": "Item deleted successfully."}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # ✅ Search Items
 @item_bp.route('/api/search_items', methods=['GET'])

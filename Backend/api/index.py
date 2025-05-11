@@ -4,9 +4,9 @@ from .register import register_bp
 from .login import login_bp
 from .item import item_bp
 from .history import history_bp
-from .search_items import search_items_bp
 from .commands import commands_bp
 from .box import box_bp
+from api.search import search_bp
 
 app = Flask(__name__)
 
@@ -27,7 +27,7 @@ app.register_blueprint(register_bp)
 app.register_blueprint(login_bp)
 app.register_blueprint(item_bp)
 app.register_blueprint(history_bp, url_prefix="/api")
-app.register_blueprint(search_items_bp, url_prefix="/api")
-app.register_blueprint(commands_bp, url_prefix="/api")
+app.register_blueprint(commands_bp)
 app.register_blueprint(box_bp)
+app.register_blueprint(search_bp)
 

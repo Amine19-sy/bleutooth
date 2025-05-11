@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:bleutooth/models/item.dart';
+import 'package:bleutooth/services/box_control.dart';
 
 class ItemDetails extends StatefulWidget {
   final Item item;
@@ -17,6 +16,8 @@ class ItemDetails extends StatefulWidget {
 }
 
 class _ItemDetailsState extends State<ItemDetails> {
+  final BoxControlService boxService = BoxControlService();
+
   BluetoothDevice? connectedDevice;
   BluetoothConnection? connection;
 
@@ -35,7 +36,6 @@ class _ItemDetailsState extends State<ItemDetails> {
   int? lastHumidity;
   int? lastTemperatureId;
 
-  static const String BASE_URL = "https://groupeproject.vercel.app/";
   static const int BOX_ID = 1;
 
   @override
@@ -73,54 +73,32 @@ class _ItemDetailsState extends State<ItemDetails> {
       }
 
       setState(() => status = '⚠️ Raspberry Pi not found.');
-    } catch (e) {
-    }
+    } catch (_) {}
   }
 
   Future<void> fetchLastTemperature({bool retryOnSameId = false}) async {
-    try {
-      final url = Uri.parse("${BASE_URL}api/last_temperature?box_id=$BOX_ID");
-      final response = await http.get(url);
+    final data = await boxService.fetchLastTemperature(BOX_ID);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final int newId = data["id"];
+    if (data == null) return;
 
-        if (!retryOnSameId || newId != lastTemperatureId) {
-          setState(() {
-            lastTemp = (data["temperature"] as num).toDouble();
-            lastHumidity = data["humidity"];
-            lastTemperatureId = newId;
-          });
-        } else {
-          await Future.delayed(Duration(seconds: 1));
-          fetchLastTemperature(retryOnSameId: true);
-        }
-      }
-    } catch (e) {
-      print("❌ Error fetching temperature: $e");
+    final int newId = data["id"];
+    if (!retryOnSameId || newId != lastTemperatureId) {
+      setState(() {
+        lastTemp = (data["temperature"] as num).toDouble();
+        lastHumidity = data["humidity"];
+        lastTemperatureId = newId;
+      });
+    } else {
+      await Future.delayed(const Duration(seconds: 1));
+      fetchLastTemperature(retryOnSameId: true);
     }
   }
 
   Future<void> sendCommand(String command) async {
-    try {
-      final url = Uri.parse("${BASE_URL}api/send_command");
-      final payload = {"command": command, "box_id": BOX_ID};
-
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(payload),
-      );
-
-      if (response.statusCode == 201) {
-        setState(() => status = "✅ Command '$command' sent");
-      } else {
-        setState(() => status = "❌ Failed: ${response.statusCode}");
-      }
-    } catch (e) {
-      setState(() => status = "❌ Error: $e");
-    }
+    final success = await boxService.sendCommand(command, BOX_ID);
+    setState(() => status = success
+        ? "✅ Command '$command' sent"
+        : "❌ Failed to send '$command'");
   }
 
   Future<void> sendCredentials() async {
@@ -154,19 +132,16 @@ class _ItemDetailsState extends State<ItemDetails> {
   void triggerWithAutoReset({
     required bool currentState,
     required String onCommand,
-    required String offCommand,
     required Function(bool) updateState,
     Function? afterOn,
   }) {
     if (currentState) {
-      sendCommand(offCommand);
       updateState(false);
     } else {
       sendCommand(onCommand);
       updateState(true);
       if (afterOn != null) afterOn();
       Future.delayed(Duration(seconds: 5), () {
-        sendCommand(offCommand);
         if (mounted) updateState(false);
       });
     }
@@ -188,9 +163,9 @@ class _ItemDetailsState extends State<ItemDetails> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              widget.item.imagePath != null && widget.item.imagePath!.isNotEmpty
-                  ? Image.network(
-                      widget.item.imagePath!,
+              widget.item.decodedImage != null
+                  ? Image.memory(
+                      widget.item.decodedImage!,
                       width: double.infinity,
                       height: 250,
                       fit: BoxFit.cover,
@@ -208,7 +183,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                   Text(widget.item.addedAt.toString(), style: const TextStyle(color: Colors.grey)),
                   const SizedBox(height: 24),
 
-                  // Commands
                   Wrap(
                     spacing: 16,
                     children: [
@@ -218,7 +192,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                           triggerWithAutoReset(
                             currentState: isBuzzerOn,
                             onCommand: "buzzer",
-                            offCommand: "stop_buzzer",
                             updateState: (val) => setState(() => isBuzzerOn = val),
                           );
                         },
@@ -229,7 +202,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                           triggerWithAutoReset(
                             currentState: isLedOn,
                             onCommand: "led",
-                            offCommand: "stop_led",
                             updateState: (val) => setState(() => isLedOn = val),
                           );
                         },
@@ -240,7 +212,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                           triggerWithAutoReset(
                             currentState: isTempOn,
                             onCommand: "temp",
-                            offCommand: "stop_temp",
                             updateState: (val) => setState(() => isTempOn = val),
                             afterOn: () => fetchLastTemperature(retryOnSameId: true),
                           );
