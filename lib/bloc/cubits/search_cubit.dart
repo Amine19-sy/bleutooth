@@ -23,12 +23,12 @@ class SearchCubit extends Cubit<SearchState> {
       final q = query.toLowerCase();
       final filtered = _allBoxes.map((box) {
         final items = (box['items'] as List)
-            .where((j) => (j['name'] as String).toLowerCase().contains(q))
+            .where((j) => (j['name']?.toString().toLowerCase() ?? '').contains(q))
             .toList();
         if (items.isEmpty) return null;
         return {
-          'box_id': box['box_id'],
-          'box_name': box['box_name'],
+          'box_id': box['box_id'] ?? -1,
+          'box_name': box['box_name']?.toString() ?? 'Unknown Box',
           'items': items,
         };
       }).whereType<Map<String, dynamic>>().toList();
@@ -36,4 +36,5 @@ class SearchCubit extends Cubit<SearchState> {
       emit(SearchLoaded(allBoxes: _allBoxes, filteredBoxes: filtered));
     }
   }
+
 }

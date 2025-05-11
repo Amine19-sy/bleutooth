@@ -39,7 +39,9 @@ class _BoxDetailsState extends State<BoxDetails> {
 
   @override
   Widget build(BuildContext context) {
+    print("user id!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${widget.user["id"]}");
     final List<Widget> _pages = <Widget>[
+      
       // BoxHeader(box: widget.box,),
       BlocProvider(
         create:
