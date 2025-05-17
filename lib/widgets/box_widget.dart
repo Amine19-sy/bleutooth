@@ -1,18 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:bleutooth/models/box.dart'; // Make sure this import points to your Box model.
+import 'package:bleutooth/models/box.dart';
+import 'package:bleutooth/services/box_control.dart';
 
-class StyledBoxCard extends StatelessWidget {
+class StyledBoxCard extends StatefulWidget {
   final Box box;
   const StyledBoxCard({Key? key, required this.box}) : super(key: key);
+
+  @override
+  State<StyledBoxCard> createState() => _StyledBoxCardState();
+}
+
+class _StyledBoxCardState extends State<StyledBoxCard> {
+  bool isOpen = false;
+  double? temperature;
+  int? humidity;
+  final BoxControlService _control = BoxControlService();
+
+  @override
+  void initState() {
+    super.initState();
+    loadTemperature();
+  }
+
+  Future<void> loadTemperature() async {
+    final result = await _control.fetchLastTemperature(widget.box.id);
+    if (result != null) {
+      setState(() {
+        temperature = (result['temperature'] as num?)?.toDouble();
+        humidity = result['humidity'] as int?;
+      });
+    }
+  }
+
+  Future<void> toggleServo() async {
+    final command = isOpen ? 'close_servo' : 'open_servo';
+    await _control.sendCommand(command, widget.box.id);
+    setState(() {
+      isOpen = !isOpen;
+    });
+  }
+
+  Future<void> locateBox() async {
+    await _control.sendCommand('buzzer', widget.box.id);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       color: Colors.white,
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -22,147 +59,58 @@ class StyledBoxCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8.0),
               child: Image.asset(
                 "assets/img/boxes.png",
-                // box.imageUrl ?? 'https://via.placeholder.com/60',
-                // You can use Image.asset for local images if you prefer.
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
               ),
             ),
             const SizedBox(width: 16),
-            // Middle section: 3 texts arranged vertically
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
-                  Text(
-                    box.name ,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(widget.box.name,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
-                  
-                  Text(
-                    box.description,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(widget.box.description,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
-                  
-                  Text(
-                    'Temperature : 23°',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  if (temperature != null && humidity != null)
+                    Text("🌡 ${temperature!.toStringAsFixed(1)}°C | 💧 $humidity%",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500])),
                 ],
               ),
             ),
             const SizedBox(width: 16),
-            
             Column(
               children: [
                 ElevatedButton(
-                  onPressed: () {
-                    
-                  },
+                  onPressed: toggleServo,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                   
+                    backgroundColor: isOpen ? Colors.red : Colors.green,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Open',style: TextStyle(fontWeight: FontWeight.bold ,color: Colors.white),),
+                  child: Text(
+                    isOpen ? 'Close' : 'Open',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton(
-                  onPressed: () {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 30),
-                  const Text(
-                    'Locate Box',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(height:60,width:120,child:ElevatedButton(
-                        onPressed: () {
-                          
-                        },
-                        style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                   
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Buz',style: TextStyle(fontWeight: FontWeight.bold ,color: Colors.white,fontSize: 18),),
-                      ),),SizedBox(width:16),
-                      Container(height:60,width:120,child:ElevatedButton(
-                        onPressed: () {
-                          
-                        },
-                        style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                   
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('LED',style: TextStyle(fontWeight: FontWeight.bold ,color: Colors.white,fontSize: 18),),
-                      ),),
-                      SizedBox(height:20)
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Close Button
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close, size: 24),
-              ),
-            )
-          ],
-        ),
-      );
-    },
-  );
-}
-
-                  ,
+                  onPressed: locateBox,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.yellow,
-                    
+                    backgroundColor: Colors.yellow[800],
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Locate',style: TextStyle(fontWeight: FontWeight.bold ,color: Colors.white)),
+                  child: const Text('Locate',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),

@@ -8,32 +8,46 @@ load_dotenv()
 box_bp = Blueprint('box', __name__)
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
-# ✅ Add Box
-@box_bp.route('/api/add_box', methods=['POST'])
-def add_box():
+# 🔁 Claim and Link a Box
+@box_bp.route('/api/claim_box', methods=['POST'])
+def claim_box():
     data = request.get_json()
+    original_name = data.get("original_name")
     user_id = data.get("user_id")
-    name = data.get("name")
+    user_box_name = data.get("user_box_name")
     description = data.get("description", "")
 
-    if not user_id or not name:
-        return jsonify({"error": "Missing 'user_id' or 'name'"}), 400
+    if not original_name or not user_id or not user_box_name:
+        return jsonify({"error": "Missing original_name, user_id or user_box_name"}), 400
 
     try:
-        result = supabase.table("Box").insert({
-            "user_id": int(user_id),
-            "name": name,
-            "description": description,
-            "is_open": False
-        }).execute()
-        if result.data:
-            return jsonify(result.data[0]), 201
-        else:
-            return jsonify({"error": "Failed to insert box"}), 500
+        # Rechercher une box disponible (user_id == null)
+        result = supabase.table("Box") \
+            .select("*") \
+            .eq("original_name", original_name.lower()) \
+            .is_("user_id", "null") \
+            .limit(1) \
+            .execute()
+
+        if not result.data or len(result.data) == 0:
+            return jsonify({"error": "Box not available or already claimed"}), 404
+
+        box_id = result.data[0]["id"]
+
+        # Mise à jour de la box
+        update = supabase.table("Box").update({
+            "user_id": user_id,
+            "name": user_box_name,
+            "description": description
+        }).eq("id", box_id).execute()
+
+        return jsonify(update.data[0]), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Fetch User Boxes
+
+# ✅ Get all boxes linked to a user
 @box_bp.route('/api/boxes', methods=['GET'])
 def fetch_user_boxes():
     user_id = request.args.get("user_id")
@@ -45,7 +59,8 @@ def fetch_user_boxes():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Request Box Access
+
+# ✅ Request access to a box (shared use)
 @box_bp.route('/api/box/request_access', methods=['POST'])
 def request_box_access():
     data = request.get_json()
@@ -68,14 +83,13 @@ def request_box_access():
             "status": "pending"
         }).execute()
 
-        if access_result.data:
-            return jsonify(access_result.data[0]), 201
-        else:
-            return jsonify({"error": "Insert failed"}), 500
+        return jsonify(access_result.data[0]), 201
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Fetch Sent Requests
+
+# ✅ View requests sent
 @box_bp.route('/api/box/requests_sent', methods=['GET'])
 def fetch_requests_sent():
     owner_id = request.args.get("owner_id")
@@ -85,7 +99,8 @@ def fetch_requests_sent():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Fetch Received Requests
+
+# ✅ View requests received
 @box_bp.route('/api/box/requests_received', methods=['GET'])
 def fetch_requests_received():
     user_id = request.args.get("user_id")
@@ -95,13 +110,13 @@ def fetch_requests_received():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Respond to Request
+
+# ✅ Accept / Decline request
 @box_bp.route('/api/box/respond_request', methods=['POST'])
 def respond_request():
     data = request.get_json()
     request_id = data.get("request_id")
     accept = data.get("accept")
-    user_id = data.get("user_id")
 
     try:
         new_status = "accepted" if accept else "declined"
@@ -109,16 +124,17 @@ def respond_request():
             "status": new_status,
             "responded_at": "now()"
         }).eq("id", request_id).execute()
+
         return jsonify(update_result.data[0]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Fetch Shared Boxes
+
+# ✅ List boxes shared with a user
 @box_bp.route('/api/shared_boxes', methods=['GET'])
 def shared_boxes():
     user_id = request.args.get("user_id")
     try:
-        # Get accepted requests for the user
         requests = supabase.table("BoxAccessRequest") \
             .select("box_id") \
             .eq("user_id", user_id) \
@@ -131,10 +147,12 @@ def shared_boxes():
 
         result = supabase.table("Box").select("*").in_("id", box_ids).execute()
         return jsonify(result.data), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Fetch Collaborators for a box
+
+# ✅ List collaborators of a box
 @box_bp.route('/api/box/collaborators', methods=['GET'])
 def fetch_collaborators():
     box_id = request.args.get("box_id")
@@ -151,5 +169,6 @@ def fetch_collaborators():
 
         users = supabase.table("User").select("id,username,email").in_("id", user_ids).execute()
         return jsonify(users.data), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500

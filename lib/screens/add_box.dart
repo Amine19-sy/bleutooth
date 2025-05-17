@@ -1,7 +1,9 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:bleutooth/widgets/input_field.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:bleutooth/services/box_service.dart';
+import 'package:bleutooth/widgets/input_field.dart';
 
 class AddBoxForm extends StatefulWidget {
   final String userId;
@@ -14,54 +16,88 @@ class AddBoxForm extends StatefulWidget {
 
 class _AddBoxFormState extends State<AddBoxForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _customNameCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
+  final _ssidCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
 
-  // A flag to indicate that the submission is in progress.
+  String? bluetoothName;
+  String? bluetoothAddress;
   bool _isLoading = false;
 
-  // Create an instance of your BoxService.
   final BoxService _boxService = BoxService();
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    requestPermissions().then((_) => detectBluetoothBox());
   }
 
-  // Handles the form submission
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> requestPermissions() async {
+    await [
+      Permission.bluetooth,
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+      Permission.location,
+    ].request();
+  }
 
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> detectBluetoothBox() async {
+    try {
+      await FlutterBluetoothSerial.instance.requestEnable();
+      final devices = await FlutterBluetoothSerial.instance.getBondedDevices();
+      for (var d in devices) {
+        if ((d.name?.toLowerCase().contains("raspberry") ?? false)) {
+          setState(() {
+            bluetoothName = d.name;
+            bluetoothAddress = d.address;
+            _customNameCtrl.text = d.name ?? '';
+          });
+          break;
+        }
+      }
+    } catch (e) {
+      print('Bluetooth error: $e');
+    }
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate() || bluetoothName == null || bluetoothAddress == null) return;
+
+    setState(() => _isLoading = true);
 
     try {
-      // Call your BoxService to add a box. The service should be implemented to
-      // create a new box using provided parameters.
-      await _boxService.addBox(
+      await _boxService.claimBox(
         userId: widget.userId,
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
+        userBoxName: _customNameCtrl.text,
+        originalName: bluetoothName!,
+        description: _descriptionCtrl.text,
       );
 
-      // Once box has been created, return to the previous screen (pop)
-      // You may pass the newBox back to refresh your list.
+      await _boxService.sendWifiCredentialsViaBluetooth(
+        bluetoothAddress!,
+        _ssidCtrl.text,
+        _passwordCtrl.text,
+        widget.userId,
+      );
+
       Navigator.of(context).pop(true);
-    } catch (error) {
-      // Show an error message if something goes wrong.
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding box: ${error.toString()}')),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _customNameCtrl.dispose();
+    _descriptionCtrl.dispose();
+    _ssidCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -73,88 +109,104 @@ class _AddBoxFormState extends State<AddBoxForm> {
           backgroundColor: Colors.white,
           title: const Text(
             'Add a box!',
-            textAlign: TextAlign.start,
             style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w900,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
               fontFamily: 'Popins',
             ),
           ),
         ),
-        body:  Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    labelText: "Name",
-                    controller: _nameController,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    labelText: "Description",
-                    controller: _descriptionController,
-                    maxLines: 6,
-                  ),
-                  const SizedBox(height: 16),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(color: Colors.grey, fontSize: 16),
-                      children: [
-                        const TextSpan(text: "Or Use "),
-                        TextSpan(
-                          text: "QR Code!",
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          recognizer:
-                              TapGestureRecognizer()
+        body: bluetoothName == null
+            ? const Center(child: Text("🔍 Searching for box..."))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      CustomTextField(
+                        labelText: "Bluetooth Name",
+                        controller: TextEditingController(text: bluetoothName),
+                        enabled: false,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        labelText: "Custom Name",
+                        controller: _customNameCtrl,
+                        validator: (v) => v!.isEmpty ? "Required" : null,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        labelText: "Description",
+                        controller: _descriptionCtrl,
+                        maxLines: 6,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        labelText: "Wi-Fi SSID",
+                        controller: _ssidCtrl,
+                        validator: (v) => v!.isEmpty ? "Required" : null,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        labelText: "Wi-Fi Password",
+                        controller: _passwordCtrl,
+                        obscureText: true,
+                        validator: (v) => v!.isEmpty ? "Required" : null,
+                      ),
+                      const SizedBox(height: 24),
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(color: Colors.grey, fontSize: 16),
+                          children: [
+                            const TextSpan(text: "Or Use "),
+                            TextSpan(
+                              text: "QR Code!",
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  // Implement your QR code logic here.
+                                  // TODO: implement QR code logic
                                 },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                            ),
+                          ],
                         ),
                       ),
-                      child:
-                          _isLoading
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isLoading
                               ? const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              )
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                )
                               : const Text(
-                                "Add",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  "Claim & Connect",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                    ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        // ),
       ),
     );
   }
