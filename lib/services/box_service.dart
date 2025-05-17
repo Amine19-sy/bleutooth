@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:bleutooth/models/box.dart';
 import 'package:bleutooth/models/boxrequest.dart';
 import 'package:bleutooth/models/user.dart';
@@ -22,29 +24,32 @@ class BoxService {
     }
   }
 
-  Future<Box> addBox({
+  /// ✅ Claim an existing available box
+  Future<Box> claimBox({
     required String userId,
-    required String name,
-    required String description,
+    required String userBoxName,
+    required String originalName,
+    String description = "",
   }) async {
-    final url = Uri.parse('$baseUrl/api/add_box');
+    final url = Uri.parse('$baseUrl/api/claim_box');
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         'user_id': userId,
-        'name': name,
+        'user_box_name': userBoxName,
+        'original_name': originalName.toLowerCase(),
         'description': description,
       }),
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
       return Box.fromJson(jsonResponse);
     } else {
       final Map<String, dynamic> errorResponse = jsonDecode(response.body);
       throw Exception(
-        errorResponse['error'] ?? 'An error occurred while adding the box.',
+        errorResponse['error'] ?? 'An error occurred while claiming the box.',
       );
     }
   }
@@ -106,8 +111,7 @@ class BoxService {
     final json = jsonDecode(resp.body) as List;
     return json.map((e) => Box.fromJson(e)).toList();
   }
-  
-  
+
   Future<List<User>> fetchCollaborators(int boxId) async {
     final resp = await http.get(
       Uri.parse('$baseUrl/api/box/collaborators?box_id=$boxId'),
@@ -120,5 +124,22 @@ class BoxService {
     return data.map((j) => User.fromJson(j)).toList();
   }
 
-
+  /// ✅ Send SSID, Password, and User ID via Bluetooth to the box
+  Future<void> sendWifiCredentialsViaBluetooth(
+    String address,
+    String ssid,
+    String password,
+    String userId,
+  ) async {
+    try {
+      final conn = await BluetoothConnection.toAddress(address);
+      final msg = "$ssid,$password,$userId\n";
+      conn.output.add(Uint8List.fromList(msg.codeUnits));
+      await conn.output.allSent;
+      await Future.delayed(const Duration(milliseconds: 500));
+      conn.finish(); // Clean disconnect
+    } catch (e) {
+      throw Exception("Bluetooth send failed: $e");
+    }
+  }
 }

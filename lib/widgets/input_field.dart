@@ -5,17 +5,22 @@ class CustomTextField extends StatefulWidget {
   final String? labelText;
   final TextEditingController? controller;
   final bool isPassword;
-  final bool isCodeInput; // New flag for confirmation code input
+  final bool isCodeInput;
   final int? maxLines;
+  final bool? enabled;
+  final bool? obscureText; // override for password field
+  final String? Function(String?)? validator;
 
   const CustomTextField({
     Key? key,
     this.labelText,
     this.controller,
     this.isPassword = false,
-    this.isCodeInput =
-        false, // Default is false, only enable for confirmation codes
+    this.isCodeInput = false,
     this.maxLines,
+    this.enabled,
+    this.obscureText,
+    this.validator,
   }) : super(key: key);
 
   @override
@@ -25,7 +30,7 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField> {
   late FocusNode _focusNode;
   bool _isFocused = false;
-  bool _isObscured = true; // Controls password visibility
+  bool _isObscured = true;
 
   @override
   void initState() {
@@ -48,17 +53,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
   Widget build(BuildContext context) {
     return TextFormField(
       maxLines: widget.maxLines ?? 1,
-      onChanged: (value) {
-        if (widget.isCodeInput) {
-          if (value.length == 1) {
-            FocusScope.of(context).nextFocus();
-          }
-        }
-      },
       controller: widget.controller,
       focusNode: _focusNode,
       cursorColor: Colors.blue,
-      obscureText: widget.isPassword ? _isObscured : false,
+      enabled: widget.enabled,
+      validator: widget.validator,
+      obscureText: widget.isPassword
+          ? _isObscured
+          : (widget.obscureText ?? false),
       keyboardType:
           widget.isCodeInput ? TextInputType.number : TextInputType.text,
       inputFormatters: widget.isCodeInput
@@ -66,12 +68,18 @@ class _CustomTextFieldState extends State<CustomTextField> {
               LengthLimitingTextInputFormatter(1),
               FilteringTextInputFormatter.digitsOnly,
             ]
-          : null, // Apply only if isCodeInput is true
+          : null,
       textAlign: widget.isCodeInput ? TextAlign.center : TextAlign.start,
       style: TextStyle(
-        fontSize: widget.isCodeInput ? 24 : 16, // Bigger for code input
-        fontWeight: widget.isCodeInput ? FontWeight.bold : FontWeight.normal,
+        fontSize: widget.isCodeInput ? 24 : 16,
+        fontWeight:
+            widget.isCodeInput ? FontWeight.bold : FontWeight.normal,
       ),
+      onChanged: (value) {
+        if (widget.isCodeInput && value.length == 1) {
+          FocusScope.of(context).nextFocus();
+        }
+      },
       decoration: InputDecoration(
         labelText: widget.labelText,
         floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -80,15 +88,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
           fontWeight: _isFocused ? FontWeight.bold : FontWeight.normal,
         ),
         border: OutlineInputBorder(
-          borderSide: BorderSide(color: _isFocused ? Colors.blue : Colors.grey),
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blue, width: 2.0),
+          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
           borderRadius: BorderRadius.circular(12),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.0),
           borderRadius: BorderRadius.circular(12),
         ),
         suffixIcon: widget.isPassword
@@ -99,7 +106,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   });
                 },
                 child: Icon(
-                  _isObscured ? Icons.visibility_off : Icons.visibility,
+                  _isObscured
+                      ? Icons.visibility_off
+                      : Icons.visibility,
                   color: _isFocused ? Colors.blue : Colors.grey,
                 ),
               )

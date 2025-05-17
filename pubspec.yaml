@@ -28,3 +28,15 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/img/out-of-stock.png
+    - assets/img/boxes.png
+    - assets/img/logo_bleutooth.png
+    - assets/img/apple.png
+    - assets/img/facebook.png
+    - assets/img/google.png
+    - assets/img/location.png
+    - assets/img/add-product.png
+    - assets/img/logo_smart_box_splash.png
+    - assets/img/smart_box_text.png
+    - assets/img/splash_icon_white_bg.png
