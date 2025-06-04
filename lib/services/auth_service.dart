@@ -72,4 +72,24 @@ class AuthService {
       throw Exception("Login failed: $e");
     }
   }
+
+  Future<void> registerFcmToken({
+
+    required String fcmToken,
+    String? deviceInfo,
+  }) async {
+    final url = Uri.parse('$baseUrl/register-token');
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({"token": fcmToken, "device_info": deviceInfo ?? ""}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to register FCM token');
+    }
+  }
+
 }

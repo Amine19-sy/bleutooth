@@ -55,7 +55,7 @@ class _BoxDetailsState extends State<BoxDetails> {
         child: Items(boxId: widget.box.id, userId: widget.user["id"]),
       ),
       HistoryPage(boxId: widget.box.id),
-      MyLineChart(dataPoints: sampleData),
+      // MyLineChart(dataPoints: sampleData),
     ];
     return Scaffold(
       backgroundColor: Colors.white,
@@ -99,10 +99,10 @@ class _BoxDetailsState extends State<BoxDetails> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Items'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'History'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fireplace),
-            label: 'Temperature',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.fireplace),
+          //   label: 'Temperature',
+          // ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,

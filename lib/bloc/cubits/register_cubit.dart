@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:bleutooth/services/notifications_service.dart';
 import 'package:bloc/bloc.dart';
 import 'dart:async';
 
@@ -29,6 +32,11 @@ class RegisterCubit extends Cubit<RegisterState> {
         email: email,
         password: password,
       );
+      //     final fcmToken = await NotificationService.instance.getFcmToken();
+      // await authService.registerFcmToken(
+      //   fcmToken: fcmToken!,
+      //   deviceInfo: Platform.operatingSystem + ' ' + Platform.operatingSystemVersion,
+      // );
       emit(RegisterSuccess(response));
     } catch (error) {
       emit(RegisterFailure(error.toString()));

@@ -101,15 +101,15 @@ class _LoginFormState extends State<LoginForm> {
                                 isPassword: true,
                               ),
                               SizedBox(height: 16),
-                              GestureDetector(
-                                child: Text(
-                                  "Forgot password?",
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              // GestureDetector(
+                              //   child: Text(
+                              //     "Forgot password?",
+                              //     style: TextStyle(
+                              //       color: Colors.blue,
+                              //       fontWeight: FontWeight.bold,
+                              //     ),
+                              //   ),
+                              // ),
                               SizedBox(height: 16),
                               if (state is LoginFailure)
                                 Padding(
@@ -196,41 +196,41 @@ class _LoginFormState extends State<LoginForm> {
                                 height: 1,
                                 margin: EdgeInsets.symmetric(vertical: 16),
                               ),
-                              Center(
-                                child: Text(
-                                  "Or Continue with",
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: CircleAvatar(
-                                      backgroundColor: Colors.red,
-                                      // child: Image.asset("assets/img/apple.png"),
-                                    ),
-                                  ),
-                                  SizedBox(width: 16),
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: CircleAvatar(
-                                      backgroundColor: Colors.black,
-                                      // child: Image.asset("assets/img/facebook.png")
-                                    ),
-                                  ),
-                                  SizedBox(width: 16),
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: CircleAvatar(
-                                      backgroundColor: Colors.blue,
-                                      // child: Image.asset("assets/img/google.png")
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              // Center(
+                              //   child: Text(
+                              //     "Or Continue with",
+                              //     style: TextStyle(color: Colors.grey),
+                              //   ),
+                              // ),
+                              // SizedBox(height: 16),
+                              // Row(
+                              //   mainAxisAlignment: MainAxisAlignment.center,
+                              //   children: [
+                              //     GestureDetector(
+                              //       onTap: () {},
+                              //       child: CircleAvatar(
+                              //         backgroundColor: Colors.red,
+                              //         // child: Image.asset("assets/img/apple.png"),
+                              //       ),
+                              //     ),
+                              //     SizedBox(width: 16),
+                              //     GestureDetector(
+                              //       onTap: () {},
+                              //       child: CircleAvatar(
+                              //         backgroundColor: Colors.black,
+                              //         // child: Image.asset("assets/img/facebook.png")
+                              //       ),
+                              //     ),
+                              //     SizedBox(width: 16),
+                              //     GestureDetector(
+                              //       onTap: () {},
+                              //       child: CircleAvatar(
+                              //         backgroundColor: Colors.blue,
+                              //         // child: Image.asset("assets/img/google.png")
+                              //       ),
+                              //     ),
+                              //   ],
+                              // ),
                             ],
                           ),
                         ),

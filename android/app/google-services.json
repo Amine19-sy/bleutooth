@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "611402151300",
+    "project_id": "smart-box-6c453",
+    "storage_bucket": "smart-box-6c453.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611402151300:android:f4b997df79cc7317c0d9d1",
+        "android_client_info": {
+          "package_name": "com.example.bleutooth"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPbvecJSc8dZNgYzd5lOYT6oXJGjmx6cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611402151300:android:8a38efcb2d901ce1c0d9d1",
+        "android_client_info": {
+          "package_name": "com.example.smart_box"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPbvecJSc8dZNgYzd5lOYT6oXJGjmx6cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -99,6 +99,8 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _userId = widget.user['id'];
+    print("====================");
+    print(widget.user);
   }
 
   @override
@@ -344,16 +346,17 @@ class CustomDrawer extends StatelessWidget {
             leading: const Icon(Icons.insert_invitation),
             title: const Text('Invitations'),
             onTap: () async {
+              print(user['id']);
               final result = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder:
-                      (_) => RequestsSentScreen(ownerId: user['user']['id']),
+                      (_) => RequestsSentScreen(ownerId: user['id']),
                 ),
               );
 
               if (result == true) {
-                context.read<RequestsSentCubit>().fetch(user['user']['id']);
+                context.read<RequestsSentCubit>().fetch(user['id']);
               }
             },
           ),
@@ -365,39 +368,39 @@ class CustomDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (_) => RequestsReceivedScreen(userId: user['user']['id'],),
+                      (_) => RequestsReceivedScreen(userId: user['id'],),
                 ),
               );
 
               if (result == true) {
-                context.read<RequestsReceivedCubit>().fetch(user['user']['id']);
+                context.read<RequestsReceivedCubit>().fetch(user['id']);
               }
             },
           ),
-          ExpansionTile(
-            leading: const Icon(Icons.sunny),
-            title: const Text('Theme'),
-            children: const [
-              ListTile(title: Text('Dark')),
-              ListTile(title: Text('Light')),
-            ],
-          ),
-          ExpansionTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            children: const [
-              ListTile(title: Text('English')),
-              ListTile(title: Text('French')),
-            ],
-          ),
-          ListTile(
-            leading: const Icon(Icons.maximize),
-            title: const Text('Thresholds'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-          ),
+          // ExpansionTile(
+          //   leading: const Icon(Icons.sunny),
+          //   title: const Text('Theme'),
+          //   children: const [
+          //     ListTile(title: Text('Dark')),
+          //     ListTile(title: Text('Light')),
+          //   ],
+          // ),
+          // ExpansionTile(
+          //   leading: const Icon(Icons.language),
+          //   title: const Text('Language'),
+          //   children: const [
+          //     ListTile(title: Text('English')),
+          //     ListTile(title: Text('French')),
+          //   ],
+          // ),
+          // ListTile(
+          //   leading: const Icon(Icons.maximize),
+          //   title: const Text('Thresholds'),
+          // ),
+          // ListTile(
+          //   leading: const Icon(Icons.settings),
+          //   title: const Text('Settings'),
+          // ),
           const Divider(),
           ListTile(
             onTap: () => _logout(context),

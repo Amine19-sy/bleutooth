@@ -40,7 +40,7 @@ class RequestsSentScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'You invited ${req.userId} to manage "${req.boxId}"',
+                      'You invited "Test" to manage "RaspBerryPi243"',
                       style: const TextStyle(fontSize: 16),
                     ),
                   );

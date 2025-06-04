@@ -167,65 +167,102 @@ class _BoxHeaderState extends State<BoxHeader> {
       child: Column(
         children: [
         // Header and Collaborators
+
         ...[
+          Container(color: Colors.grey[200],height: 50,),
           Stack(
             children: [
-              Container(height: 180, color: Colors.blueAccent),
+              Container(height: 180, color:  Colors.grey[200],),
+              SizedBox(height: 32,),
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, size: 60, color: Colors.white),
+                    ClipRRect(
+              borderRadius: BorderRadius.circular(8.0),
+              child: Image.asset(
+                "assets/img/boxes.png",
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+              ),
+            ),
                     const SizedBox(height: 8),
                     Text(widget.box.name,
                         style: const TextStyle(
-                            color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                            color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             ],
           ),
+          SizedBox(height: 16,),
+          Container(
+                margin: EdgeInsets.only(left: 8),
+                child: Text(
+                  'Description',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Popins',
+                  ),
+                ),
+              ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(widget.box.description, style: const TextStyle(fontSize: 16, height: 1.5)),
           ),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text('Collaborators',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 80,
-            child: BlocBuilder<CollaboratorsCubit, CollaboratorsState>(
-              builder: (_, state) {
-                if (state is CollaboratorsLoading) return const Center(child: CircularProgressIndicator());
-                if (state is CollaboratorsError) return Text('Error: ${state.message}');
-                if (state is CollaboratorsLoaded) {
-                  final users = state.users;
-                  if (users.isEmpty) return const Text('No collaborators yet.');
-                  return ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: users.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (_, i) => Column(
-                      children: [
-                        CircleAvatar(radius: 24, child: Text(users[i].username[0].toUpperCase())),
-                        const SizedBox(height: 4),
-                        Text(users[i].username, style: const TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          const Divider(),
+          Container(
+                margin: EdgeInsets.only(left: 8),
+                child: Text(
+                  'Locate Box',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Popins',
+                  ),
+                ),
+              ),
+          // const Padding(
+          //   padding: EdgeInsets.symmetric(horizontal: 16.0),
+          //   child: Text('Collaborators',
+          //       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          // ),
+          // const SizedBox(height: 8),
+          // SizedBox(
+          //   height: 80,
+          //   child: BlocBuilder<CollaboratorsCubit, CollaboratorsState>(
+          //     builder: (_, state) {
+          //       if (state is CollaboratorsLoading) return const Center(child: CircularProgressIndicator());
+          //       if (state is CollaboratorsError) return Text('Error: ${state.message}');
+          //       if (state is CollaboratorsLoaded) {
+          //         final users = state.users;
+          //         if (users.isEmpty) return const Text('No collaborators yet.');
+          //         return ListView.separated(
+          //           scrollDirection: Axis.horizontal,
+          //           itemCount: users.length,
+          //           separatorBuilder: (_, __) => const SizedBox(width: 10),
+          //           itemBuilder: (_, i) => Column(
+          //             children: [
+          //               CircleAvatar(radius: 24, child: Text(users[i].username[0].toUpperCase())),
+          //               const SizedBox(height: 4),
+          //               Text(users[i].username, style: const TextStyle(fontSize: 12)),
+          //             ],
+          //           ),
+          //         );
+          //       }
+          //       return const SizedBox.shrink();
+          //     },
+          //   ),
+          // ),
+          // const Divider(),
         ],
 
         // Hardware controls
+        SizedBox(height: 16,),
         Wrap(
           spacing: 16,
           children: [
@@ -263,13 +300,35 @@ class _BoxHeaderState extends State<BoxHeader> {
                 );
               },
             ),
+            // ElevatedButton(
+            //   onPressed: () {
+            //     sendCommand(isServoOpen ? "close_servo" : "open_servo");
+            //     setState(() => isServoOpen = !isServoOpen);
+            //   },
+            //   child: Text(isServoOpen ? "Close Servo" : "Open Servo"),
+            // ),
             ElevatedButton(
-              onPressed: () {
+                              onPressed: () {
                 sendCommand(isServoOpen ? "close_servo" : "open_servo");
                 setState(() => isServoOpen = !isServoOpen);
               },
-              child: Text(isServoOpen ? "Close Servo" : "Open Servo"),
-            ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child:
+                                      
+                                           Text(
+                                            isServoOpen ? "Close Box" : "Open Box",
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                ),
           ],
         ),
 
@@ -278,6 +337,20 @@ class _BoxHeaderState extends State<BoxHeader> {
           Text("🌡️ Temp: ${lastTemp!.toStringAsFixed(1)} °C"),
           Text("💧 Humidity: $lastHumidity %"),
         ],
+      Divider(),
+      SizedBox(height: 16,),
+        Container(
+                margin: EdgeInsets.only(left: 8),
+                child: Text(
+                  'Configure Box',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Popins',
+                  ),
+                ),
+              ),
 
         SwitchListTile(
           title: const Text("Activate Bluetooth"),

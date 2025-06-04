@@ -95,6 +95,7 @@ def fetch_requests_sent():
     owner_id = request.args.get("owner_id")
     try:
         result = supabase.table("BoxAccessRequest").select("*").eq("requested_by", owner_id).execute()
+        print(result.data)
         return jsonify(result.data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

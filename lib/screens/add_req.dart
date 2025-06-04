@@ -109,7 +109,7 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
                             ),
                           )
                           : const Text(
-                            "Add Item",
+                            "Send Invitation",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

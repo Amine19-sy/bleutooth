@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:bleutooth/services/notifications_service.dart';
 import 'package:bloc/bloc.dart';
 import 'package:bleutooth/services/auth_service.dart';
 import '../states/login_states.dart';
@@ -20,6 +23,11 @@ class LoginCubit extends Cubit<LoginState> {
         username: identifier,
         password: password,
       );
+      //     final fcmToken = await NotificationService.instance.getFcmToken();
+      // await authService.registerFcmToken(
+      //   fcmToken: fcmToken!,
+      //   deviceInfo: Platform.operatingSystem + ' ' + Platform.operatingSystemVersion,
+      // );
       emit(LoginSuccess(response));
     } catch (error) {
       emit(LoginFailure(error.toString()));
